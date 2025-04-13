@@ -1,5 +1,5 @@
 const express=require('express');
-const {users,movies}=require('./db');//import the users model
+const {users,movies,showtimes,theaters, sequelize, bookings}=require('./db');//import the users model
 const {setUser}=require('./service/auth');
 const router=express.Router();
 const {restrictToLoggedinUserOnly,isAdmin}=require('./middlware/auth');
@@ -238,7 +238,6 @@ router.post('/fetch-movies',restrictToLoggedinUserOnly,isAdmin,async(req,res)=>{
 //Search/filter movies by genre,language,or release_date
 //for filter pass genre,language,or release_date(anyone or all) by json
 
-
 router.post('/browse',async(req,res)=>{
     try{
         //read page and limit from request body
@@ -270,6 +269,204 @@ router.post('/browse',async(req,res)=>{
         });
     }catch(error){
         res.status(500).json({message:"Error fetching movies",error:error.message});
+    }
+});
+
+//For add new theaters
+//pass id,name,location by json
+
+router.post('/Add-Theaters',restrictToLoggedinUserOnly,isAdmin,async(req,res)=>{
+    try{
+        
+        const{id,name,location}=req.body;
+
+        if(!id || !name || !location){
+            return res.status(400).json({message:"All fields are required"});
+        }
+
+        const theater=await theaters.create({
+            id,
+            name,
+            location
+        });
+        res.status(201).json({message:"Theater created successfully!",theater});
+
+    }catch(error){
+        res.status(500).json({message:"Error Creating showtime",error:error.message});
+    }
+});
+
+//For add new Showtimes
+//pass id,movie_id,theater_id,date,time,price,total_seats,available_seats by json
+
+router.post('/Add-Showtimes',restrictToLoggedinUserOnly,isAdmin,async(req,res)=>{
+    try{
+        
+        const{id,movie_id,theater_id,date,time,price,total_seats,available_seats}=req.body;
+
+        if(!id || !movie_id || !theater_id || !date || !time || !price || !total_seats || !available_seats){
+            return res.status(400).json({message:"All fields are required"});
+        }
+
+        const showtime=await showtimes.create({
+            id,
+            movie_id,
+            theater_id,
+            date,
+            time,
+            price,
+            total_seats,
+            available_seats
+        });
+        res.status(201).json({message:"Showtime created successfully!",showtime});
+
+    }catch(error){
+        res.status(500).json({message:"Error Creating showtime",error:error.message});
+    }
+});
+
+//View all showtimes
+//pass title(movie) from json
+
+router.post('/showtimes',async (req, res) => {
+    try {
+        const { title } = req.body;
+
+        if (!title) {
+            return res.status(400).json({ message: "Movie title is required" });
+        }
+
+        //Find the movie by title
+        const movie=await movies.findOne({
+            where:{ title },
+            //fetch only this column
+            attributes:['id','title']
+        });
+
+        if(!movie){
+            return res.status(404).json({message:"Movie not found"});
+        }
+
+        // Get all showtimes for that movie with theater info
+        const showtime = await showtimes.findAll({
+            where: { movie_id:movie.id },
+            //show only this detail from Showtime
+            attributes:['id','theater_id','date','time','price','total_seats','available_seats'],
+            //join theaters with showtime based on association
+            include:[{
+                model:theaters,
+                attributes:['name','location']
+            }],
+
+            order:[['id','ASC']]
+           
+        });
+
+        if (showtime.length === 0) {
+            return res.status(404).json({ message: "No showtimes available for this movie" });
+        }
+
+        res.json({
+            movie_id:movie.id,
+            title: movie.title,
+            Showtime:showtime
+        });
+
+    } catch (error) {
+        res.status(500).json({ message: "Error fetching showtimes", error: error.message });
+    }
+});
+
+//Select Seats and Book tickets
+
+router.post('/book',async(req,res)=>{
+    const{user_id, movie_title, theater_name, date, time, seats_booked}=req.body;
+
+    if(!user_id || !movie_title || !theater_name || !date || !time || !seats_booked){
+        return res.status(400).json({message:"Missing booking data"});
+    }
+
+    try{
+        //Get theater
+        const theater=await theaters.findOne({
+            where:{name:theater_name}
+        });
+        if(!theater) return res.status(404).json({message:"Theater not found"});
+
+        //Get movie
+        const movie=await movies.findOne({
+            where:{title:movie_title}
+        });
+
+        //Get showtime
+        const showtime =await showtimes.findOne({
+            where:{
+                
+                movie_id:movie.id,
+                theater_id:theater.id,
+                date,
+                time
+            }
+        });
+        if(!showtime) return res.status(404).json({message:"Showtime not found"});
+        
+        //check available seats
+        if(showtime.available_seats<seats_booked.length){
+            return res.status(409).json({message:"Not enough seats avilable"})
+        }
+
+        const total_price=showtime.price*seats_booked.length;
+
+        //Book inside transaction
+        const booking=await sequelize.transaction(async(t)=>{
+            const newBooking=await bookings.create({
+                user_id,
+                showtime_id:showtime.id,
+                seats_booked: seats_booked.join(','), // store as comma-separated string
+                total_price,
+                status:"confirmed"
+
+            },{transaction:t});
+
+            await showtimes.update(
+                {available_seats:showtime.available_seats-seats_booked.length},
+                {
+                    where:{
+                        id:showtime.id,
+                        
+                    },transaction:t
+                }
+            );
+            return newBooking;
+        });
+
+        res.json({message:"Booking successful",booking});
+
+    }catch(error){
+        res.status(500).json({message:"Booking failed",error:error.message});
+    }
+});
+
+//View booking history 
+//pass userid
+router.get('/booking',async(req,res)=>{
+    const{user_id}=req.body;
+    if(!user_id) return res.status(400).json({message:"User id is required"});
+
+    try{
+
+        const history=await bookings.findAll({
+            where:{
+                user_id:user_id,
+            }
+        });
+        if(!history) return res.status(404).json({message:"History not found"});
+
+        res.json({history});
+
+    }catch(error){
+        res.status(500).json({message:"History Not Found",error:error.message});
+
     }
 });
 

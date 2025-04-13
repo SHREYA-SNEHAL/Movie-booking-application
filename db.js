@@ -1,3 +1,4 @@
+const { name } = require('ejs');
 const{Sequelize,DataTypes, ENUM, Association}=require('sequelize');
 
 //Create a Sequelize instance
@@ -6,8 +7,9 @@ const sequelize=new Sequelize('db','root','Shreya@19',{
     dialect:'mysql',
 });
 
-//Define The Model
+//Define The Model(User Management)
 //Table for Users
+
 const users=sequelize.define('users',{
     id:{
         type:DataTypes.INTEGER,
@@ -69,7 +71,9 @@ const users=sequelize.define('users',{
     }
 })();
 
+//Movie Management
 //Table for Movies
+
 const movies=sequelize.define('movies',{
     id:{
         type:DataTypes.INTEGER,
@@ -140,6 +144,7 @@ const movies=sequelize.define('movies',{
 });
 
 //define Associations Here
+//User-Movie(Relationship)
 
 users.hasMany(movies,{foreignKey:"addedBy"});
 movies.belongsTo(users,{foreignKey:"addedBy"});
@@ -158,4 +163,161 @@ movies.belongsTo(users,{foreignKey:"addedBy"});
     }
 })();
 
-module.exports={sequelize,users,movies};
+
+//Ticket Booking
+//Theatres table
+
+const theaters=sequelize.define('theaters',{
+    id:{
+        type:DataTypes.INTEGER,
+        autoIncrement:true,
+        primaryKey:true,
+    },
+
+    name:{
+        type:DataTypes.STRING,
+        unique:true,
+        allowNull:false,
+    },
+
+    location:{
+        type:DataTypes.STRING,
+        allowNull:false,
+    },
+
+    },{
+        tableName:'Theaters',
+        timestamps:true  //adds createdAt and updatedAt automatically
+    
+});
+
+//Showtime table
+
+const showtimes=sequelize.define('showtimes',{
+    id:{
+        type:DataTypes.INTEGER,
+        autoIncrement:true,
+        primaryKey:true,
+
+    },
+
+    movie_id:{
+        type:DataTypes.INTEGER,
+        allowNull:false,
+
+    },
+
+    theater_id:{
+        type:DataTypes.INTEGER,
+        allowNull:false,
+
+    },
+
+    date:{
+        type:DataTypes.DATEONLY,
+        allowNull:false,
+
+    },
+
+    time:{
+        type:DataTypes.TIME,
+        allowNull:false,
+
+    },
+
+    price:{
+        type:DataTypes.FLOAT,
+        allowNull:false,
+
+    },
+
+    total_seats:{
+        type:DataTypes.INTEGER,
+        allowNull:false,
+
+    },
+
+    available_seats:{
+        type:DataTypes.INTEGER,
+        allowNull:false,
+
+    },
+},{
+    tableName:'Showtimes',
+    timestamps:true
+});
+
+//Booking Model
+
+const bookings=sequelize.define('bookings',{
+    id:{
+        type:DataTypes.INTEGER,
+        autoIncrement:true,
+        primaryKey:true,
+
+    },
+
+    user_id:{
+        type:DataTypes.INTEGER,
+        allowNull:false,
+
+    },
+
+    showtime_id:{
+        type:DataTypes.INTEGER,
+        allowNull:false,
+
+    },
+
+    seats_booked:{
+        type:DataTypes.TEXT,
+        allowNull:false,
+
+    },
+
+    total_price:{
+        type:DataTypes.FLOAT,
+        allowNull:false,
+
+    },
+
+    status:{
+        type:DataTypes.ENUM('confirmed','cancelled'),
+        allowNull:false,
+        defaultValue:'confirmed',
+
+    },
+
+
+},{
+    tableName:'Bookings',
+    timestamps:true
+});
+
+//Showtime-Movie and Theater(Relationship)
+showtimes.belongsTo(movies,{foreignKey:'movie_id'});//connect automatically with id of movies table
+//not need to create movie_id in movies table ,create it only in showtime table
+showtimes.belongsTo(theaters,{foreignKey:'theater_id'});
+//it join theaters with each showtime//association
+theaters.hasMany(showtimes,{foreignKey:'theater_id'});
+
+//Booking-User and Showtime(Relationship)
+bookings.belongsTo(users,{foreignKey:'user_id'});
+bookings.belongsTo(showtimes,{foreignKey:'showtime_id'});
+
+//Sync all 3(theaters,showtimes,bookings) table together
+
+(async ()=>{
+    try{
+        await sequelize.authenticate();
+        console.log('Connection has been established successfully.');
+
+        await sequelize.sync();//sync all
+        console.log('All tables have been created successfully.');
+
+    }catch(error){
+        console.error('Unable to connect to the database:',error);
+    }
+})();
+
+module.exports={sequelize,users,movies,theaters,showtimes,bookings};
