@@ -1,6 +1,6 @@
 # Movie Booking Application
 
-A full-featured web application for browsing movies and booking tickets online. Built with Node.js, Express, and MySQl.
+A full-featured web application for browsing movies and booking tickets online. Built with Node.js, Express, and MySQL.
 
 ## Table of Contents
 
@@ -38,7 +38,8 @@ A full-featured web application for browsing movies and booking tickets online. 
   - Express.js
 
 - **Database:**
-  - MYSQL (Sequelize}
+  - MySQL
+  - Sequelize (ORM)
 
 - **Additional Tools:**
   - npm (package manager)
@@ -49,7 +50,7 @@ A full-featured web application for browsing movies and booking tickets online. 
 
 - Node.js (v12.0 or higher)
 - npm (v6.0 or higher)
-- MYSQL (local or cloud instance)
+- MySQL (local or cloud instance)
 - Git
 
 ### Steps
@@ -71,6 +72,10 @@ A full-featured web application for browsing movies and booking tickets online. 
    PORT=3000
    NODE_ENV=development
    SESSION_SECRET=your_session_secret_here
+   DB_HOST=localhost
+   DB_USER=root
+   DB_PASSWORD=your_password
+   DB_NAME=movie_booking_db
    ```
 
 4. **Start the application:**
@@ -85,10 +90,10 @@ A full-featured web application for browsing movies and booking tickets online. 
 
 ### Database Setup
 
-The application uses MongoDB. You can:
+The application uses MySQL with Sequelize ORM. You can:
 
-- **Local MongoDB:** Install MongoDB locally and update `MONGODB_URI` in `.env`
-- **MongoDB Atlas:** Use a cloud MongoDB instance and update the connection string
+- **Local MySQL:** Install MySQL locally and update the connection credentials in `.env`
+- **Cloud MySQL:** Use a cloud MySQL instance (e.g., AWS RDS, Google Cloud SQL) and update the connection string
 
 ### Environment Variables
 
@@ -96,7 +101,11 @@ Create a `.env` file with the following variables:
 
 ```
 PORT=3000
-MONGODB_URI=your_mongodb_connection_string
+DB_HOST=localhost
+DB_USER=root
+DB_PASSWORD=your_mysql_password
+DB_NAME=movie_booking_db
+DB_PORT=3306
 NODE_ENV=development
 SESSION_SECRET=your_secret_key
 ADMIN_EMAIL=admin@example.com
@@ -125,7 +134,7 @@ ADMIN_EMAIL=admin@example.com
 
 ```
 Movie-booking-application/
-├── models/              # Database models
+├── models/              # Sequelize database models
 ├── routes/              # Express routes
 ├── controllers/         # Business logic
 ├── views/               # EJS templates
