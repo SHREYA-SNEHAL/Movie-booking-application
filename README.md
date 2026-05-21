@@ -23,8 +23,7 @@ A full-featured web application for browsing movies and booking tickets online. 
 - 📅 View movie schedules and showtimes
 - 🔍 Filter movies by genre, rating, and availability
 - 📱 Responsive design for mobile and desktop
-- 📧 Email notifications for bookings
-- ⭐ User reviews and ratings
+  
 
 ## Tech Stack
 
@@ -39,7 +38,7 @@ A full-featured web application for browsing movies and booking tickets online. 
   - Express.js
 
 - **Database:**
-  - MongoDB
+  - MYSQL (Sequelize}
 
 - **Additional Tools:**
   - npm (package manager)
@@ -50,7 +49,7 @@ A full-featured web application for browsing movies and booking tickets online. 
 
 - Node.js (v12.0 or higher)
 - npm (v6.0 or higher)
-- MongoDB (local or cloud instance)
+- MYSQL (local or cloud instance)
 - Git
 
 ### Steps
@@ -70,7 +69,6 @@ A full-featured web application for browsing movies and booking tickets online. 
    Create a `.env` file in the root directory and add:
    ```
    PORT=3000
-   MONGODB_URI=mongodb://localhost:27017/movie-booking
    NODE_ENV=development
    SESSION_SECRET=your_session_secret_here
    ```
