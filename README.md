@@ -1,6 +1,6 @@
 # Movie Booking Application
 
-A full-featured web application for browsing movies and booking tickets online. Built with Node.js, Express, and MongoDB.
+A full-featured web application for browsing movies and booking tickets online. Built with Node.js, Express, and MySQl.
 
 ## Table of Contents
 
